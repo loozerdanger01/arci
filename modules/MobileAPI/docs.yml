@@ -1,0 +1,4746 @@
+servers:
+  - url: "https://lnt-mobile-api-function-app.azurewebsites.net/api"
+info:
+  version: 0.1.2
+  title: IoTfy IoT Core
+
+openapi: 3.0.2
+
+paths:
+  # App User Auth
+  "/auth/requestOtp":
+    post:
+      operationId: appuser_auth_request_otp__post
+      summary: Request otp for app user registration, forgot password and login
+      tags:
+        - App User Auth
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0' and 'v1')"
+
+        - in: header
+          name: X-CRADLE-API-KEY
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/OtpRequestBody"
+            examples:
+              OTP for Signup (v0):
+                value:
+                  reason: 0
+                  data:
+                    first_name: "Sumit"
+                    last_name: "Shah"
+                    auth_id: "1075107500"
+                    country_code: "+91"
+
+              OTP for Signup (v1):
+                value:
+                  reason: 0
+                  data:
+                    auth_id: "1075107500"
+                    country_code: "+91"
+
+              OTP for Login:
+                value:
+                  reason: 1
+                  data:
+                    auth_id: "1075107500"
+                    country_code: "+91"
+
+              OTP for Forgot Password:
+                value:
+                  reason: 2
+                  data:
+                    auth_id: "1075107500"
+                    country_code: "+91"
+
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error codes
+            * INVALID_USER_NAME
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+ 
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * SERVER_ERROR
+            * USER_ACCOUNT_ALREADY_EXISTS
+            * USER_ACCOUNT_DOES_NOT_EXIST
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/auth/signup":
+    post:
+      operationId: appuser_auth_signup__post
+      summary: User signup request to register
+      tags:
+        - App User Auth
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: header
+          name: X-CRADLE-API-KEY
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/SignupRequestBody"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_PASSWORD
+            * INVALID_INPUT
+            * OTP_MISMATCH
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_ACCOUNT_ALREADY_EXISTS
+            * OTP_EXPIRED
+            * OTP_MISMATCH
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+
+  "/auth/login":
+    post:
+      operationId: appuser_auth_login__post
+      summary: User Login Request
+      tags:
+        - App User Auth
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: header
+          name: X-CRADLE-API-KEY
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/LoginRequestBody"
+            examples:
+              Login via OTP:
+                value:
+                  auth_id: "1075107500"
+                  country_code: "+91"
+                  data:
+                    via: 0
+                    value: "101010"
+              Login via Password:
+                value:
+                  auth_id: "1075107500"
+                  country_code: "+91"
+                  data:
+                    via: 1
+                    value: "iotfy@123"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthSuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Bad Request
+
+        "500":
+          description: |
+            ### Error Codes
+            * USER_ACCOUNT_DOES_NOT_EXIST
+            * OTP_EXPIRED
+            * OTP_MISMATCH
+            * SERVER_ERROR
+            * INVALID_PASSWORD
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+  
+  
+  "/oauth/access_token":
+    post:
+      operationId: get_access_token_by_refresh_token_post
+      summary: Get new access token through refresh token
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+                - grant_type
+              properties:
+                refresh_token:
+                  type: object
+                  example: "yJhbGciOiJIUzI1NiJ9.MzhhMzE2NzktODM5Yi00ODUyLWJiNDgtNzk5YjIxMTFiYTlj.4zxbL5cjAnqv_YWZ1Nnk1zFGv0AjQ6Y9hLVt91prupo"
+                grant_type:
+                  type: object
+                  example: "refresh_token"
+
+      responses:
+        "200":
+          description: Auth Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthSuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+
+  "/auth/logout":
+    delete:
+      operationId: appuser_auth_logout__post
+      summary: User Logout Request
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+
+  "/auth/setPassword":
+    post:
+      operationId: appuser_set_password__post
+      summary: Handle setting a new password
+      tags:
+        - App User Auth
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: header
+          name: X-CRADLE-API-KEY
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              title: SetPasswordRequestBody
+              type: object
+              required:
+                - auth_id
+                - country_code
+                - password
+                - otp
+              properties:
+                auth_id:
+                  type: string
+                  minLength: 10
+                  example: "1075107500"
+                  description: "Phone number or email"
+                country_code:
+                  type: string
+                  minLength: 2
+                  example: "+91"
+                  description: "Country Code"
+                password:
+                  type: string
+                  example: "iotfy@123"
+                  description: "User Password"
+                  minLength: 6
+                otp:
+                  type: string
+                  example: "123456"
+                  description: "6 digit OTP"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+            * OTP_MISMATCH
+            * INVALID_PASSWORD
+          
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * USER_ACCOUNT_DOES_NOT_EXIST
+            * OTP_EXPIRED
+            * OTP_MISMATCH
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+
+  "/config":
+    get:
+      operationId: get_app_config__get
+      summary: Get App Configuration
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connection:
+                    type: string
+                    example: "ewogICAiaG9zdG5hbWUiOiAibG50dGVzdGh1Yi5henVyZS1kZXZpY2VzLm5ldCIsCiAgICJjb25uX3N0cmluZyI6ICJIb3N0TmFtZT1sbnR0ZXN0aHViLmF6dXJlLWRldmljZXMubmV0O1NoYXJlZEFjY2Vzc0tleU5hbWU9c2RrYWNjZXNzcG9saWN5O1NoYXJlZEFjY2Vzc0tleT01ZW1rOUYzT1FXTUFBUzhCT2lCRm5YMnZ3My8xd3ZRZnNBSW9UREFTWHVRPSIKfQ=="
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user":
+    get:
+      operationId: get_app_user__get
+      summary: Get App User profile information.
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UserProfileResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * USER_ACCOUNT_DOES_NOT_EXIST
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+    post:
+      operationId: update_app_user__get
+      summary: Update App User Profile
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              title: UpdateUserProfileRequestBody
+              type: object
+              required:
+                - first_name
+                - last_name
+              properties:
+                first_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 15
+                  example: "Tim"
+                  description: "First name of user"
+                last_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 15
+                  example: "David"
+                  description: "Last name of user"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UserProfileResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * USER_ACCOUNT_DOES_NOT_EXIST
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+    delete:
+      operationId: appuser_delete_user__post
+      summary: Delete App User Account
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * USER_THING_MAPPING_EXISTS
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/search":
+    get:
+      operationId: search_app_user__get
+      summary: Get App User Information.
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: auth_id
+          required: true
+          schema:
+            type: string
+            title: Auth ID
+        - in: query
+          name: country_code
+          required: true
+          schema:
+            type: string
+            title: Country Code
+            default: "+91"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - partial_name
+                properties:
+                  id:
+                    type: string
+                    example: "401e582b-1744-45fc-8f04-740ba2ac1038"
+                  partial_name:
+                    type: string
+                    example: "Tom****"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Bad Request
+
+        "500":
+          description: |
+            ### Error Codes
+            * USER_ACCOUNT_DOES_NOT_EXIST
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/fcmToken":
+    post:
+      operationId: appuser_fcm_token__post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - fcm_token
+              properties:
+                fcm_token:
+                  type: string
+
+      summary: Update user FCM messaging token
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_SESSION
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+  "/user/notifications":
+    get:
+      operationId: get_appuser_notification__post
+      summary: Get user's notifications
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NotificationsResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: page_cursor
+          required: false
+          schema:
+            type: string
+            default: ""
+
+        - in: query
+          name: page_size
+          required: true
+          schema:
+            type: integer
+            default: 20
+
+  "/user/notifications/unread":
+    get:
+      operationId: get_unread_notification__post
+      summary: Get unread notifications
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/NotificationsResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: page_cursor
+          required: false
+          schema:
+            type: string
+            default: ""
+
+        - in: query
+          name: page_size
+          required: true
+          schema:
+            type: integer
+            default: 20
+
+  "/user/notifications/unread/markAsRead":
+    post:
+      operationId: mark_notification_as_read__post
+      summary: Mark notification read
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: "If notifications will be a blank list, all notification of user will be marks as Read."
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - notifications
+              properties:
+                notifications:
+                  type: array
+                  items:
+                    anyOf:
+                      - type: string
+                        default: "123456"
+                      - type: string
+                        default: "123456"
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+  "/user/notifications/unread/count":
+    get:
+      operationId: get_unread_notification_count__post
+      summary: Get unread notification count
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - count
+                properties:
+                  count:
+                    type: integer
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+  "/user/homes":
+    get:
+      operationId: get_user_homes__get
+      summary: Get Homes of User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - homes
+                properties:
+                  homes:
+                    type: array
+                    title: UserHomesResponse
+                    items:
+                      anyOf:
+                        - type: object
+                          required:
+                            - id
+                            - name
+                            - membership
+                            - status
+                            - is_default
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            is_default:
+                              type: boolean
+                            status:
+                              type: integer
+                              enum: [0, 1]
+                              description: "Status of home member is it invited? or invitation has been accepted"
+                            membership:
+                              type: integer
+                              description: "Is this home shared with user or created by user"
+                              enum: [0, 1, 2, 3]
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+    post:
+      operationId: create_user_home__post
+      summary: Create Room for User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: HomeRequestBody
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 25
+                  description: "Name for the home"
+                  example: "Farm House"
+                is_default:
+                  type: boolean
+                  example: false
+                  default: false
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                title: HomeResponse
+                required:
+                  - id
+                  - name
+                  - membership
+                  - status
+                  - is_default
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  status:
+                    type: integer
+                    enum: [0, 1]
+                    description: "Status of home member is it invited? or invitation has been accepted"
+                  membership:
+                    type: integer
+                    enum: [0, 1, 2, 3]
+                  is_default:
+                    type: boolean
+                    example: false
+                    description: "Is this the default home of user"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/homes/{home_id}":
+    delete:
+      operationId: delete_user_hoom__get
+      summary: Delete Home of User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * HOME_MAPPING_MISSING
+            * USER_THING_MAPPING_EXISTS
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+    post:
+      operationId: update_app_user_home__post
+      summary: Update Home of User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: HomeRequestBody
+              required:
+                - name
+                - is_default
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 15
+                  description: "Name for the home"
+                  example: "Farm House"
+                is_default:
+                  type: boolean
+                  default: false
+                  example: false
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * DEFAULT_HOME_SHOULD_EXIST
+            * HOME_MAPPING_MISSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/homes/{home_id}/rooms":
+    get:
+      operationId: get_user_rooms__get
+      summary: Get Rooms of User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - rooms
+                properties:
+                  rooms:
+                    type: array
+                    items:
+                      anyOf:
+                        - type: object
+                          required:
+                            - id
+                            - type
+                            - name
+                          properties:
+                            id:
+                              type: string
+                            type:
+                              type: integer
+                            name:
+                              type: string
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * HOME_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+
+    post:
+      operationId: create_user_room__post
+      summary: Create Room for User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: CreateRoomRequestBody
+              required:
+                - type
+                - name
+              properties:
+                type:
+                  type: integer
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 25
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - type
+                  - name
+                properties:
+                  id:
+                    type: string
+                  type:
+                    type: integer
+                  name:
+                    type: string
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_NOT_HOME_ADMIN
+            * HOME_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+
+
+  "/user/homes/{home_id}/rooms/{room_id}":
+    post:
+      operationId: update_user_room__post
+      summary: Update user's room by Id
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              title: UpdateRoomRequestBody
+              required:
+                - name
+                - type
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 15
+                type:
+                  type: integer
+                  example: 0
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_NOT_HOME_ADMIN
+            * HOME_MAPPING_MISSING
+            * ROOM_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: room_id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+
+    delete:
+      operationId: delete_user_room__delete
+      summary: Delete Room of User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * HOME_MAPPING_MISSING
+            * USER_NOT_HOME_ADMIN
+            * ROOM_MAPPING_MISSING
+            * ROOM_IS_NOT_EMPTY
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: room_id
+          required: true
+          schema:
+            type: string
+
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+
+  "/user/homes/{home_id}/members":
+    get:
+      operationId: get_home_member__get
+      summary: Get Members of Home
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - members
+                properties:
+                  members:
+                    type: array
+                    items:
+                      anyOf:
+                        - "$ref": "#/components/schemas/HomeMemberResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_NOT_HOME_OWNER
+            * HOME_MAPPING_MISSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/homes/{home_id}/members/{member_id}":
+    delete:
+      operationId: delete_user_hoom_member__get
+      summary: Remove Member of Home
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+        - in: path
+          name: member_id
+          required: true
+          schema:
+            type: string
+            title: Member ID
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_NOT_HOME_OWNER
+            * HOME_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/homes/{home_id}/members/invite":
+    post:
+      operationId: send_home_invitaion__get
+      summary: Send The Home Invitation
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - membership
+              properties:
+                user_id:
+                  type: string
+                  description: "User Id"
+                membership:
+                  type: integer
+                  enum: [0, 1, 2, 3]
+                  description: "Membership level of user"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HomeMemberResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_NOT_HOME_OWNER
+            * HOME_MAPPING_MISSING
+            * USER_ALREADY_INVITED
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/homes/invitations":
+    get:
+      operationId: get_user_homes_invitation__get
+      summary: Get Homes Invitations for User
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - invitations
+                properties:
+                  invitations:
+                    type: array
+                    title: UserHomesResponse
+                    items:
+                      anyOf:
+                        - type: object
+                          required:
+                            - home_id
+                            - home_name
+                            - invited_by
+                            - status
+                          properties:
+                            home_id:
+                              type: string
+                            home_name:
+                              type: string
+                            invited_by:
+                              type: string
+                            membership:
+                              type: integer
+                              enum: [0, 1, 2, 3]
+                              description: "Membership level of user"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/user/homes/invitations/{home_id}":
+    post:
+      operationId: accept_home_invitaion__get
+      summary: Accept The Home Invitation
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - name
+                  - membership
+                  - status
+                  - is_default
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  is_default:
+                    type: boolean
+                  status:
+                    type: integer
+                    enum: [0, 1]
+                    description: "Status of home member is it invited? or invitation has been accepted"
+                  membership:
+                    type: integer
+                    description: "Is this home shared with user or created by user"
+                    enum: [0, 1, 2, 3]
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * HOME_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+    delete:
+      operationId: reject_home_invitaion__get
+      summary: Reject The Home Invitation
+      tags:
+        - App User Auth
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+
+  "/fw/certs":
+    get:
+      operationId: get_certificate_signed_url__post
+      summary: Get Certificates Signed URL
+      tags:
+        - Firmware
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Certificates Signed URL
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "jMOrum43PbhTXD20NeW7F5b0K9VFDHvaFoCPB14qzbdIWXYiYag34QSrINxmr4vjARluL1VTBKmaldZX8dXpgdJTtwryFJQFoD6RlwwR+iSeaAT8pXpAYHhnTSlscKV3MDu+dvgt3LGAdGIMm3BMayRaJMwtkM8BRao9fYj4MFJ5MflRer80A+A=="
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+          description: "Valiated token"
+
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: integer
+            default: 0
+          description: "Certificate type"
+
+        - in: header
+          name: X-CRADLE-ESP-STA-MAC
+          required: true
+          schema:
+            type: string
+          description: "MAC id of esp"
+
+  "/fw/ota":
+    get:
+      operationId: ota_status__post
+      summary: Handle OTA status
+      tags:
+        - Firmware
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: query
+          name: udid
+          required: true
+          schema:
+            type: string
+            example: udid1
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: otaMarkResponseBody
+                type: object
+                required:
+                  - Status
+                properties:
+                  Status:
+                    type: integer
+                    description: "OTA update status."
+                    example: 1
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "500":
+          description: |
+            ### Error Codes
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+        "401":
+          description: Auth Failure
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+    post:
+      operationId: ota_update__post
+      summary: Handle OTA update initialization
+      tags:
+        - Firmware
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+        - in: header
+          name: X-CRADLE-API-KEY
+          required: true
+          schema:
+            type: string
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              title: UpdateOtaRequestBody
+              type: object
+              required:
+                - udid
+              properties:
+                udid:
+                  type: string
+                  description: "Thing ID"
+
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "500":
+          description: |
+            ### Error Codes
+            * THING_NOT_MARK_FOR_OTA
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+
+  # Thing Management
+  "/things":
+    get:
+      operationId: get_things__post
+      summary: Get List of User Things
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Things list and state of things response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - things
+                properties:
+                  things:
+                    type: array
+                    items:
+                      anyOf:
+                        - "$ref": "#/components/schemas/UserThingResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+  "/things/{thing_id}":
+    get:
+      operationId: get_device_info__get
+      summary: Get Device Detail
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Get thing detail
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/UserThingResponse"
+        "400":
+          description: |
+            ### Error Codes 
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_THING_MAPPING_MISSING
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+  "/things/{thing_id}/verify":
+    get:
+      operationId: verify_scan_device__get
+      summary: Verified Scanned Device
+      tags:
+        - Thing Management
+      responses:
+        "200":
+          description: Get thing verfiy detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - type
+                  - f_ver
+                  - f_lib_ver
+                properties:
+                  id:
+                    type: string
+                  type:
+                    type: integer
+                  f_ver:
+                    type: string
+                  f_lib_ver:
+                    type: string
+
+        "400":
+          description: |
+            ### Error Codes 
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+  "/things/{thing_id}/signedUrl":
+    get:
+      operationId: generate_signed_url_for_thing__post
+      summary: Generate Signed URL for thing
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Success Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signed_url:
+                    type: string
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_THING_ID
+            * USER_THING_MAPPING_DOES_NOT_EXISTS
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+  "/things/{thing_id}/userConfig":
+    post:
+      operationId: update_thing_user_config__post
+      summary: Update thing User Config
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                preferences:
+                  type: object
+
+            examples:
+              Update Preferences:
+                value:
+                  preferences:
+                    mode: 2
+                    stemp: 5
+                    fspd: 4
+      responses:
+        "200":
+          description: Success Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_THING_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+  "/things/{thing_id}/ownership":
+    post:
+      operationId: bind_thing_to_user__post
+      summary: Bind thing to user.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/BindThingRequestBody"
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/BindThingResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### ErrorCodes
+            * HOME_MAPPING_MISSING
+            * USER_NOT_HOME_OWNER
+            * INVALID_THING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+          description: "ID of thing which will be bind to the user"
+    delete:
+      operationId: remove_thing_ownershiip__post
+      summary: Remove thing user binding.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+  "/things/{thing_id}/share":
+    get:
+      operationId: get_thing_shared_user__post
+      summary: Get shared user's list of thing
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Shared User Mappings
+          content:
+            application/json:
+              schema:
+                title: SharedUserResponse
+                type: object
+                required:
+                  - users
+                properties:
+                  users:
+                    type: array
+                    items:
+                      anyOf:
+                        - type: object
+                          required:
+                            - id
+                            - ownership
+                          oneOf:
+                            - required:
+                                - email
+                            - required:
+                                - phone
+                          properties:
+                            id:
+                              type: string
+                            first_name:
+                              type: string
+                            last_name:
+                              type: string
+                            phone:
+                              type: string
+                            ownership:
+                              type: integer
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_THING_MAPPING_MISSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+          description: "ID of thing which will be bind to the user"
+
+    post:
+      operationId: thing_share_action__post
+      summary: Share Thing with user.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            examples:
+              Share Device (v0):
+                value:
+                  auth_id: "testmaster+cradle@iotfy.co"
+                  country_code: "+91"
+                  ownership: 1
+
+              Share Device (v1):
+                value:
+                  id: "397c1754-2786-4349-b081-bc87bdd2b483"
+                  ownership: 1
+
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * USER_THING_MAPPING_MISSING
+            * USER_ACCOUNT_DOES_NOT_EXISTS
+            * USER_NOT_THING_OWNER
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0' and 'v1')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+          description: "ID of thing which will be bind to the user"
+
+    delete:
+      operationId: unshare_action__post
+      summary: Unshare Thing
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * USER_THING_MAPPING_MISSING
+            * USER_NOT_THING_OWNER
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0' and 'v1')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+        - in: query
+          name: shared_user_id
+          required: true
+          schema:
+            type: string
+
+  "/things/sharedWithMe":
+    get:
+      operationId: get_shared_thing_with_user__get
+      summary: Get Thing shared by user
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+      responses:
+        "200":
+          description: Shared User Mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - things
+                properties:
+                  things:
+                    type: array
+                    items:
+                      anyOf:
+                        - "$ref": "#/components/schemas/UserThingResponse"
+
+              examples:
+                Shared With Me:
+                  value:
+                    things:
+                      - id: string
+                        type: 0
+                        model_id: string
+                        room_id: string
+                        f_ver: string
+                        h_flash_mb: 4096
+                        f_cc_ver: string
+                        f_config: {}
+                        is_bridge: true
+                        user_config: {}
+                        is_admin: true
+                        is_owner: false
+                        model_config: {}
+                        state_json:
+                          state: {}
+                          state_ts: 0
+                          connected: true
+                          conn_ts: 0
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/things/sharedByMe":
+    get:
+      operationId: get_thing_shared_by_user__get
+      summary: Get Thing shared by user
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: home_id
+          required: false
+          schema:
+            type: string
+
+      responses:
+        "200":
+          description: Shared User Mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - things
+                properties:
+                  things:
+                    type: array
+                    items:
+                      anyOf:
+                        - "$ref": "#/components/schemas/UserThingResponse"
+              examples:
+                Shared By Me:
+                  value:
+                    things:
+                      - id: string
+                        type: 0
+                        model_id: string
+                        room_id: string
+                        f_ver: string
+                        h_flash_mb: 4096
+                        f_cc_ver: string
+                        f_config: {}
+                        is_bridge: true
+                        user_config: {}
+                        is_admin: true
+                        is_owner: true
+                        model_config: {}
+                        state_json:
+                          state: {}
+                          state_ts: 0
+                          connected: true
+                          conn_ts: 0
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+
+  "/things/{thing_id}/energyStats":
+    get:
+      operationId: things_energyStats_get
+      summary: Thing EnergyStats
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: [ ]
+
+      responses:
+        "200":
+          description: Successful response contain energy statistics data on particular date
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  2024-05-11:
+                    type: number
+                    description: Energy statistics of 2024-05-11.
+                  2024-05-12:
+                    type: number
+                    description: Energy statistics of 2024-05-12.
+
+
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth Failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * USER_THING_MAPPING_MISSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0' and 'v1')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+
+        - in: query
+          name: start_date
+          required: true
+          schema:
+            type: string
+
+        - in: query
+          name: end_date
+          required: true
+          schema:
+            type: string
+
+        - in: query
+          name: time_zone
+          required: true
+          schema:
+            type: string
+
+  "/things/{thing_id}/automations":
+    get:
+      operationId: get_thing_automation_by_id_get
+      summary: Get Thing Automations By Thing Id
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: [ ]
+
+
+      responses:
+        "200":
+          description: Success Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  "f038dd69-75d4-41dc-8f47-6751a2e386a8":
+                    type: object
+                    required:
+                      - name
+                      - icon
+                    properties:
+                      name:
+                        type: string
+                      icon:
+                        type: string
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * INVALID_INPUT
+            * USER_THING_MAPPING_MISSING
+            * SERVER_ERROR
+
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: thing_id
+          required: true
+          schema:
+            type: string
+          description: "Id of thing for which automation info to be fetched"
+  
+  "/things/automation":
+    get:
+      operationId: create_thing_schedule__post
+      summary: Get List of Thing Automation by feature
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thing Schedules
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - automations
+                properties:
+                  automations:
+                    type: array
+                    items:
+                      anyOf:
+                        - "$ref": "#/components/schemas/ScheduleResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * HOME_MAPPING_MISSING
+            * USER_THING_MAPPING_MISSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+
+        - in: query
+          name: feature
+          required: false
+          schema:
+            type: integer
+          description: "Current Supported Values (0 -> Schedule and 1 -> Routine)"
+
+        - in: query
+          name: thing_id
+          required: false
+          schema:
+            type: string
+          description: "ID of thing which schedule need to be fetched"
+
+        - in: query
+          name: home_id
+          required: false
+          schema:
+            type: string
+          description: "Id of user home for which routine need to be fetched"
+
+
+    post:
+      operationId: create_schedule__post
+      summary: Create Thing Automation.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ScheduleRequestBody"
+            examples:
+              Schedule:
+                value:
+                  type: 0
+                  enabled: true
+                  info:
+                    feature: 0
+                    udid: "1234567890"
+                  actions: "string"
+                  repeat_on_days: [0, 1, 2, 3, 4, 5, 6]
+
+              Routine:
+                value:
+                  type: 0
+                  name: "Test Routine"
+                  enabled: true
+                  info:
+                    feature: 1
+                  actions: "string"
+
+                  repeat_on_days: [0, 1, 2, 3, 4, 5, 6]
+
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "cb3edbe4-fa03-4ac7-b368-fc6ef820b814"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_THING_MAPPING_MISSING
+            * INVALID_THING
+            * HOME_MAPPING_MISSSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: home_id
+          required: false
+          schema:
+            type: string
+          description: "Id of user home for which routine is to be created"
+
+  "/things/automation/{automation_id}":
+    get:
+      operationId: get_schedule_by_id__post
+      summary: Get Thing Automation By ID
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thing Schedule
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ScheduleResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+            * INTERNAL_SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: automation_id
+          required: true
+          schema:
+            type: string
+          description: "Id of Automation to be fetched"
+
+    post:
+      operationId: update_schedule__post
+      summary: Update Thing Automation.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/ScheduleRequestBody"
+
+            examples:
+              Schedule:
+                value:
+                  type: 0
+                  enabled: true
+                  info:
+                    feature: 0
+                    udid: "1234567890"
+                  actions: "string"
+                  repeat_on_days: [0, 1, 2, 3, 4, 5, 6]
+
+              Routine:
+                value:
+                  type: 0
+                  name: "Test Routine"
+                  enabled: true
+                  info:
+                    feature: 1
+                  actions: "string"
+                  repeat_on_days: [0, 1, 2, 3, 4, 5, 6]
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * USER_THING_MAPPING_MISSING
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: automation_id
+          required: true
+          schema:
+            type: string
+          description: "Id of automation to be fetched"
+
+    delete:
+      operationId: delete_schedule_by_id__post
+      summary: Delete Thing Automation.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: automation_id
+          required: true
+          schema:
+            type: string
+          description: "Id of Automation to be deleted"
+  
+  "/things/automation/{automation_id}/run":
+    post:
+      operationId: run_automation_by_id__post
+      summary: Run Thing Automation By ID
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: [ ]
+      responses:
+        "200":
+          description: Success Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: automation_id
+          required: true
+          schema:
+            type: string
+          description: "Id of Automation to be run"
+
+  "/things/automation/{automation_id}/scene/run":
+    post:
+      operationId: run_scene_automation_by_id__post
+      summary: Run Scene Thing Automation by ID
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: [ ]
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - udid
+              properties:
+                udid:
+                  type: object
+                  example: "1234567890"
+      responses:
+        "200":
+          description: Success Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+
+        "500":
+          description: |
+            ### Error Codes
+            * SERVER_ERROR
+            * USER_THING_MAPPING_MISSING
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: automation_id
+          required: true
+          schema:
+            type: string
+          description: "Id of Automation to be run"
+
+  
+  "/groups":
+    get:
+      operationId: get_thing_groups__post
+      summary: Get List of Thing Groups
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thing Groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - "$ref": "#/components/schemas/GroupResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+    post:
+      operationId: create_group__post
+      summary: Create Thing Groups.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/GroupRequestBody"
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - name
+                  - master_device
+                  - things
+                  - model_id
+                  - type
+                  - user_config
+                  - model_config
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  master_device:
+                    type: string
+                  things:
+                    type: array
+                    items:
+                      anyOf:
+                        - type: string
+                          default: "123456789123"
+                  model_iid:
+                    type: string
+                  type:
+                    type: integer
+                  signed_url:
+                    type: string
+                  user_config:
+                    type: object
+                  model_config:
+                    type: object
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * INVALID_THING
+            * MODEL_SHOULD_BE_SAME
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: query
+          name: home_id
+          required: true
+          schema:
+            type: string
+            title: Home ID
+
+  "/groups/{group_id}":
+    get:
+      operationId: get_thing_groups_by_id__post
+      summary: Get Thing Group By ID
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thing Groups
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/GroupResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_GROUP_MAPPING_MISSING
+            * SERVER ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+          description: "ID of the group that needs to be fetch"
+
+    post:
+      operationId: update_group_by_id__post
+      summary: Update group by Id.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/GroupRequestBody"
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: |
+            ### Error Codes
+            * USER_GROUP_MAPPING_MISSING
+            * INVALID_THING
+            * MODEL_SHOULD_BE_SAME
+            * SERVER_ERROR
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+          description: "ID of the group that needs to be fetch"
+
+    delete:
+      operationId: delete_group_by_id__post
+      summary: Delete Thing Group By ID.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+          description: "Id of group to be deleted"
+
+
+
+  "/groups/{group_id}/state":
+    get:
+      operationId: get_group_state_by_id__post
+      summary: Get Thing Group state by By ID
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Thing Groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - state
+                  - state_ts
+                properties:
+                  state:
+                    type: object
+                  state_ts:
+                    type: integer
+        "400":
+          description: |
+            ### Error Codes
+            * GROUP_USER_MAPPING_MISSING
+            * GROUP_DOES_NOT_EXISTS
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+          description: "ID of the group that needs to be fetch"
+
+    post:
+      operationId: update_group_state_by_id__post
+      summary: Update group state by Id.
+      tags:
+        - Thing Management
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - state
+              properties:
+                state:
+                  type: object
+      responses:
+        "200":
+          description: Bind user to thing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/SuccessResponse"
+        "400":
+          description: |
+            ### Error Codes
+            * INVALID_INPUT
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ClientError"
+        "401":
+          description: Auth failure
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AuthFailure"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InternalServerError"
+      parameters:
+        - in: header
+          name: X-CRADLE-API-VERSION
+          required: true
+          schema:
+            type: string
+            title: Version
+            default: v0
+          description: "API Version (Current supported API Version is 'v0')"
+
+        - in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+          description: "ID of the group that needs to be fetch"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SuccessResponse:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: STATUS_SUCCESS
+        message:
+          type: string
+          example: "Successful"
+      type: object
+
+    ClientError:
+      title: ClientError
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INVALID_INPUT
+        message:
+          type: string
+          example: "Invalid request data"
+      type: object
+
+    AuthFailure:
+      title: AuthFailure
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: AUTHORIZATION_FAILURE
+        message:
+          type: string
+          example: "Invalid token or api key"
+
+    InternalServerError:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: SERVER_ERROR
+        message:
+          type: string
+          example: Internal server error
+      type: object
+
+    OtpRequestBody:
+      title: OtpRequestBody
+      type: object
+      required:
+        - data
+        - reason
+      properties:
+        reason:
+          type: integer
+          description: Purpose of request (0 - Signup OTP, 1 - Login , 2 - Forgot Password OTP)
+        data:
+          type: object
+          required:
+            - auth_id
+          properties:
+            first_name:
+              type: string
+              minLength: 3
+              maxLength: 15
+              description: "First name of user"
+            last_name:
+              type: string
+              minLength: 3
+              maxLength: 15
+              description: "Last name of user"
+            auth_id:
+              type: string
+              minLength: 10
+              description: "Email or Phone of user"
+            country_code:
+              type: string
+              default: "+91"
+
+    SignupRequestBody:
+      title: SignupRequestBody
+      type: object
+      required:
+        - auth_id
+        - country_code
+        - password
+        - otp
+      properties:
+        auth_id:
+          type: string
+          minLength: 10
+          example: "1075107500"
+          description: "Phone No or Email"
+        country_code:
+          type: string
+          minLength: 2
+          example: "+91"
+          description: "Country Code"
+        password:
+          type: string
+          example: "iotfy@123"
+          description: "User password"
+          minLength: 6
+        otp:
+          type: string
+          example: "101010"
+          description: "6 digit OTP"
+        latlong:
+          type: string
+          example: "11.1,12.2"
+
+    AuthSuccessResponse:
+      title: AuthSuccessResponse
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+        refresh_token:
+          type: string
+          example: "yJhbGciOiJIUzI1NiJ9.MzhhMzE2NzktODM5Yi00ODUyLWJiNDgtNzk5YjIxMTFiYTlj.4zxbL5cjAnqv_YWZ1Nnk1zFGv0AjQ6Y9hLVt91prupo"
+        token_type:
+          type: string
+          example: "Bearer"
+          description: "JWT Token"
+        expires_in:
+          type: integer
+          example: 3600
+
+
+    LoginRequestBody:
+      title: LoginRequestBody
+      type: object
+      required:
+        - auth_id
+        - country_code
+        - data
+      properties:
+        auth_id:
+          type: string
+          description: "Phone or email"
+        country_code:
+          type: string
+          description: "country code"
+        data:
+          type: object
+          required:
+            - via
+            - value
+          properties:
+            via:
+              type: string
+              description: "Which method of login is using (0 - OTP, 1 - Password)"
+            value:
+              type: string
+              description: "Value of OTP or password"
+
+    UserProfileResponse:
+      title: UserProfileResponse
+      type: object
+      properties:
+        id:
+          type: string
+          example: "f038dd69-75d4-41dc-8f47-6751a2e386a8"
+          description: "User ID"
+        first_name:
+          type: string
+          example: "Tim"
+        last_name:
+          type: string
+          example: "David"
+        phone:
+          type: string
+          example: "1075107500"
+          description: "User Phone Number(If Verified)"
+        email:
+          type: string
+          example: "testmaster+ap@iotfy.co"
+          description: "User Email (If Verified)"
+
+    UserThingResponse:
+      title: UserThingResponse
+      type: object
+      required:
+        - id
+        - type
+        - is_bridge
+        - h_flash_mb
+        - f_ver
+        - f_lib_ver
+        - stack
+        - is_update_available
+        - model_id
+        - model_name
+        - model_code
+        - model_config
+        - img_url
+        - connected
+        - ssid
+        - room_id
+        - ownership
+        - proto
+
+      properties:
+        id:
+          type: string
+        type:
+          type: integer
+        is_bridge:
+          type: boolean
+        h_flash_mb:
+          type: integer
+        f_ver:
+          type: string
+        f_lib_ver:
+          type: string
+        stack:
+          type: string
+        is_update_available:
+          type: boolean
+        model_id:
+          type: string
+        model_name:
+          type: string
+        model_code:
+          type: string
+        model_config:
+          type: string
+        user_config:
+          type: string
+        img_url:
+          type: string
+        state:
+          type: string
+        state_ts:
+          type: integer
+        connected:
+          type: boolean
+        ssid:
+          type: string
+        conn_ts:
+          type: integer
+        room_id:
+          type: string
+        ownership:
+          type: string
+        proto:
+          type: string
+
+    BindThingRequestBody:
+      title: BindThingRequestBody
+      type: object
+      required:
+        - uat
+        - home_id
+        - location
+      properties:
+        uat:
+          type: string
+        home_id:
+          type: string
+        ssid:
+          type: string
+        location:
+          type: object
+          required:
+            - lat
+            - lon
+          properties:
+            lat:
+              type: string
+            lon:
+              type: string
+
+    BindThingResponse:
+      title: BindThingResponse
+      type: object
+      required:
+        - id
+        - type
+        - is_bridge
+        - h_flash_mb
+        - f_ver
+        - f_lib_ver
+        - stack
+        - is_update_available
+        - model_id
+        - model_name
+        - model_code
+        - model_config
+        - user_config
+        - img_url
+        - state
+        - state_ts
+        - connected
+        - conn_ts
+        - room_id
+        - ownership
+        - proto
+      properties:
+        id:
+          type: string
+        type:
+          type: integer
+        is_bridge:
+          type: boolean
+        h_flash_mb:
+          type: integer
+        f_ver:
+          type: string
+        f_lib_ver:
+          type: string
+        stack:
+          type: string
+        is_update_available:
+          type: boolean
+        model_id:
+          type: string
+        model_name:
+          type: string
+        model_code:
+          type: string
+        model_config:
+          type: string
+        user_config:
+          type: string
+        img_url:
+          type: string
+        state:
+          type: string
+        state_ts:
+          type: integer
+        connected:
+          type: boolean
+        ssid:
+          type: string
+        conn_ts:
+          type: integer
+        room_id:
+          type: string
+        ownership:
+          type: string
+        proto:
+          type: string
+
+    ScheduleRequestBody:
+      title: ScheduleRequestBody
+      type: object
+      required:
+        - type
+        - feature
+        - repeat_on_days
+        - enabled
+        - info
+        - actions
+      properties:
+        type:
+          type: integer
+        feature:
+          type: integer
+        repeat_on_days:
+          type: array
+          items:
+            anyOf:
+              - type: integer
+                default: 0
+              - type: integer
+                default: 1
+              - type: integer
+                default: 2
+              - type: integer
+                default: 3
+              - type: integer
+                default: 4
+              - type: integer
+                default: 5
+              - type: integer
+                default: 6
+        enabled:
+          type: boolean
+        info:
+          type: object
+        actions:
+          type: string
+
+    ScheduleResponse:
+      title: ScheduleResponse
+      type: object
+      required:
+        - id
+        - home_id
+        - user_id
+        - type
+        - info
+        - repeat_on_days
+        - enabled
+        - actions
+      properties:
+        id:
+          type: string
+        home_id:
+          type: string
+        user_id:
+          type: string
+        name:
+          type: string
+        type:
+          type: integer
+        info:
+          type: object
+        actions:
+          type: string
+        repeat_on_days:
+          type: array
+          items:
+            anyOf:
+              - type: integer
+                default: 0
+              - type: integer
+                default: 1
+              - type: integer
+                default: 2
+              - type: integer
+                default: 3
+              - type: integer
+                default: 4
+              - type: integer
+                default: 5
+              - type: integer
+                default: 6
+        enabled:
+          type: boolean
+
+    GroupRequestBody:
+      type: object
+      required:
+        - name
+        - udids
+      properties:
+        name:
+          type: string
+        udids:
+          type: array
+          items:
+            anyOf:
+              - type: string
+                default: "123456789123"
+
+    GroupResponse:
+      title: GroupResponse
+      type: object
+      required:
+        - id
+        - name
+        - thing_type
+        - udids
+        - user_id
+        - home_id
+        - config
+        - state
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        thing_type:
+          type: string
+        udids:
+          type: array
+          items:
+            anyOf:
+              - type: string
+                default: "123456789123"
+        user_id:
+          type: string
+        home_id:
+          type: string
+        room_id:
+          type: string
+        config:
+          type: string
+        state:
+          type: string
+
+    NotificationsResponse:
+      title: NotificationsResponse
+      type: object
+      required:
+        - next_cursor
+        - notifications
+      properties:
+        next_cursor:
+          type: string
+        notifications:
+          type: array
+          items:
+            anyOf:
+              - type: object
+                required:
+                  - id
+                  - ts
+                  - read
+                  - type
+                  - data
+                properties:
+                  id:
+                    type: string
+                    description: "ID of notification"
+                  ts:
+                    type: integer
+                    description: "Timestamp from epoch in millis"
+                  read:
+                    type: boolean
+                    description: "Notification has been read or not"
+                    example: false
+                  type:
+                    type: integer
+                    description: "Notification Type"
+                  data:
+                    type: object
+                    description: "Notification message JSON"
+
+    HomeMemberResponse:
+      title: HomeMemberResponse
+      type: object
+      required:
+        - user_id
+        - first_name
+        - last_name
+        - membership
+        - status
+      properties:
+        user_id:
+          type: string
+          example: "670c951f-77bc-40f8-9fc2-605835d6430b"
+        first_name:
+          type: string
+          example: "Tim"
+        last_name:
+          type: string
+          example: "David"
+        membership:
+          type: integer
+          example: 0
+        status:
+          type: integer
+          enum: [0, 1]
+          description: "Status of home member is it invited? or invitation has been accepted"
